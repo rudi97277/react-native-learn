@@ -7,6 +7,7 @@ const AntDFloatingButton = ({
   size = 25,
   color = null,
   backgroundColor = null,
+  onPress = () => {},
 }) => {
   const styles = StyleSheet.create({
     floatingButton: {
@@ -22,7 +23,7 @@ const AntDFloatingButton = ({
   });
 
   return (
-    <TouchableOpacity style={styles.floatingButton}>
+    <TouchableOpacity style={styles.floatingButton} onPress={onPress}>
       <AntDesingIcon
         name={iconName}
         size={size}

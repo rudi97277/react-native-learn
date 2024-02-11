@@ -1,4 +1,5 @@
 import {
+  Button,
   Modal,
   StyleSheet,
   Text,
@@ -6,78 +7,49 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AntDesingIcon from "react-native-vector-icons/AntDesign";
 import { colors } from "../../constant/style";
 import AntDFloatingButton from "../../components/AntDFloatingButton";
+import AddFormModal from "./AddFormModal";
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    paddingHorizontal: 10,
     gap: 5,
-  },
-  containerInput: {
-    flexDirection: "row",
-    gap: 5,
-  },
-  input: {
-    borderColor: colors.primary,
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 7,
-    flex: 1,
-    borderRadius: 5,
-    maxHeight: 40,
   },
 });
 
 const Add = ({ setBadge }) => {
-  const nameRef = useRef(),
-    flatRef = useRef(),
-    priceRef = useRef(),
-    qtyRef = useRef();
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [qty, setQty] = useState("");
+  const flatRef = useRef();
+
   const [list, setList] = useState([]);
-  const [tQty, setTQty] = useState(0);
-  const [tPrice, setTPrice] = useState(0);
+  const [summaries, setSummaries] = useState({ qty: 0, price: 0 });
+  const [showModal, setShowModal] = useState(false);
 
-  const handleReset = () => {
-    setName("");
-    setPrice("");
-    setQty("");
+  const handleShowModal = () => {
+    setShowModal(true);
   };
 
-  const handleSave = () => {
-    if (!name && !price) return alert("Name and price is required!");
-    setTQty((prev) => prev + Number.parseFloat(qty));
-    setTPrice(
-      (prev) =>
-        prev + Number.parseFloat(price) * (qty > 0 ? Number.parseFloat(qty) : 1)
+  const hideModal = () => {
+    setShowModal(false);
+  };
+
+  useEffect(() => {
+    const summaryData = list.reduce(
+      (acc, obj) => {
+        acc.qty += Number.parseFloat(obj.qty);
+        acc.price += Number.parseFloat(obj.qty) * Number.parseFloat(obj.price);
+        return acc;
+      },
+      { qty: 0, price: 0 }
     );
-    setList((prev) => [...prev, { name, price, qty }]);
-    setBadge(list.length + 1);
-    handleReset();
-    nameRef.current.focus();
-    flatRef.scro;
-  };
+    setSummaries(summaryData);
 
-  const handleQty = (text) => {
-    setQty(text.replace(/[^0-9.,]/g, ""));
-  };
-
-  const handlePrice = (text) => {
-    setPrice(text.replace(/[^0-9.,]/g, ""));
-  };
+    setBadge(list.length > 0 ? list.length : null);
+  }, [list]);
 
   const option = {
     style: "currency",
@@ -87,110 +59,55 @@ const Add = ({ setBadge }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: colors.primary,
+          marginHorizontal: -10,
+          paddingHorizontal: 10,
+          marginBottom: 5,
+          paddingVertical: 10,
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: 500, color: "white" }}>
+          {`Total  ${summaries.qty} Kg`}
+        </Text>
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: 500,
+            marginLeft: "auto",
+            color: "white",
+          }}
+        >
+          {summaries.price.toLocaleString("id-ID", option).slice(0, -3)}
+        </Text>
+      </View>
       <FlatList
         data={list}
         ref={flatRef}
+        onContentSizeChange={() =>
+          flatRef.current?.scrollToEnd({ animated: true })
+        }
         showsVerticalScrollIndicator={true}
-        scrol
         renderItem={({ item, index }) => (
-          <View>
+          <View style={{ paddingVertical: 1 }}>
             <Text style={styles.item}>{`${index + 1}. ${item.name}`}</Text>
             <Text>{`${item.price} x ${item.qty}`}</Text>
           </View>
         )}
         ListEmptyComponent={() => <Text>Empty List</Text>}
       />
-      <Modal visible={false} style={{ backgroundColor: "red" }}>
-        <Text>Halo</Text>
-      </Modal>
-      <View
-        style={{
-          flexDirection: "row",
-          backgroundColor: colors.secondary,
-          marginHorizontal: -10,
-          paddingHorizontal: 10,
-          marginBottom: 5,
-          paddingVertical: 5,
-        }}
-      >
-        <Text style={{ fontSize: 18, fontWeight: 500, color: colors.grey }}>
-          Total
-        </Text>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: 500,
-            marginLeft: "auto",
-            color: colors.grey,
-          }}
-        >
-          {`${tQty} Kg --- ${tPrice
-            .toLocaleString("id-ID", option)
-            .slice(0, -3)}`}
-        </Text>
-      </View>
-      <View style={{ flexDirection: "row", gap: 5 }}>
-        <TextInput
-          placeholder="*Name"
-          ref={nameRef}
-          style={{ ...styles.input, width: "80%" }}
-          autoComplete="off"
-          value={name}
-          onSubmitEditing={() => {
-            priceRef.current.focus();
-          }}
-          autoCorrect={false}
-          blurOnSubmit={false}
-          onChangeText={setName}
-        />
+      <AddFormModal
+        showModal={showModal}
+        hideModal={hideModal}
+        setList={setList}
+        flatRef={flatRef}
+      />
 
-        <TouchableOpacity onPress={handleSave} style={styles.button}>
-          <AntDesingIcon
-            name="plus"
-            color={"white"}
-            size={20}
-            style={{ textAlign: "center" }}
-          />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.containerInput}>
-        <TextInput
-          placeholder="*Price (Rp)"
-          ref={priceRef}
-          value={price}
-          keyboardType="numeric"
-          style={{ ...styles.input, width: "45%" }}
-          onSubmitEditing={() => {
-            qtyRef.current.focus();
-          }}
-          blurOnSubmit={false}
-          onChangeText={handlePrice}
-        />
-        <TextInput
-          placeholder="Quantity (Kg)"
-          ref={qtyRef}
-          value={qty}
-          keyboardType="numeric"
-          style={{
-            ...styles.input,
-            borderColor: colors.secondary,
-            width: "33.5%",
-          }}
-          onChangeText={handleQty}
-        />
-        <TouchableOpacity
-          onPress={handleReset}
-          style={{ ...styles.button, backgroundColor: colors.red }}
-        >
-          <AntDesingIcon
-            name="reload1"
-            color={"white"}
-            size={20}
-            style={{ textAlign: "center" }}
-          />
-        </TouchableOpacity>
-      </View>
-      <AntDFloatingButton />
+      {!showModal && (
+        <AntDFloatingButton iconName="plus" onPress={handleShowModal} />
+      )}
     </SafeAreaView>
   );
 };
